@@ -1,0 +1,3 @@
+vegas_params @ git+https://github.com/RTESolution/vegas_params.git@ash/add_expression_utils
+rte @ git+https://github.com/RTESolution/rte.git@ash/make_spherical_detectors
+plotly
