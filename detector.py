@@ -10,8 +10,18 @@ class BGVD_Module(rte.detectors.DetectorSpherical):
                          radius=OpticalModule.radius
                         )
     @staticmethod
-    def efficiency(p:rte.Point):
-        cosTheta = p.s.z
+    def _angular_efficiency(cosTheta):
         eff = np.sum([a*cosTheta**n for n,a in enumerate(OpticalModule.angular_parameters)], axis=0)
-        eff *= (cosTheta>0) #keep only upward going tracks
+        # eff *= (cosTheta>0) #keep only upward going tracks
         return eff.squeeze()
+
+    def efficiency(self, p:rte.Point):
+        #convert to local RF
+        R_local = p.R-self['center'].sample()
+        N_local = R_local/R_local.mag()
+        #calculate angular efficiency
+        eff_angular = self._angular_efficiency(cosTheta = N_local.z)
+        #discard rays coming from inside
+        eff_valid = (N_local.dot(p.s)<0).squeeze()
+        print(f"{eff_angular.shape=}, {eff_valid.shape}")
+        return eff_valid * eff_angular
