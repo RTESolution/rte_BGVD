@@ -22,7 +22,7 @@ class BaikalWater(bgvd_model.BaikalWater):
 
 water = BaikalWater()
 
-def get_properties(wavelength):
+def get_water_properties(wavelength):
     return rte.Medium(
         mu_a = water.mu_a(wavelength),
         mu_s = water.mu_s(wavelength),

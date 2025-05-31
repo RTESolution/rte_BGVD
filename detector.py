@@ -19,9 +19,11 @@ class BGVD_Module(rte.detectors.DetectorSpherical):
         #convert to local RF
         R_local = p.R-self['center'].sample()
         N_local = R_local/R_local.mag()
+        #discard rays coming from inside
+        cosTheta_to_normal = N_local.dot(p.s).squeeze()
+        eff_valid = 1.*(cosTheta_to_normal<0)
+        eff_valid *= -cosTheta_to_normal
+        return eff_valid
         #calculate angular efficiency
         eff_angular = self._angular_efficiency(cosTheta = N_local.z)
-        #discard rays coming from inside
-        eff_valid = (N_local.dot(p.s)<0).squeeze()
-        print(f"{eff_angular.shape=}, {eff_valid.shape}")
         return eff_valid * eff_angular

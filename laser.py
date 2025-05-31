@@ -7,7 +7,9 @@ class cosTheta_DiffusorExp(vp.Uniform):
         self.sigma = sigma
         super().__init__()
     def __construct__(self, x):
-        return self.sigma*np.log(np.exp(-1./self.sigma) + x*(np.exp(1/self.sigma) - np.exp(-1/self.sigma)) )
+        return self.sigma*np.log(np.exp(-1./self.sigma) 
+                                 + x*(np.exp(1/self.sigma) - np.exp(-1/self.sigma)) 
+                                )
 
 
 @vp.expression
@@ -21,11 +23,28 @@ def DiffusorExp(light, sigma=0):
         return diffused_light(light, diffusor=vp.Direction(cos_theta=cosTheta_DiffusorExp(sigma)))
 
 
-def Laser(position, direction, time=0, *, diffuser_sigma=0, total_photons=1e15):
-    src = rte.Source(R=vp.Vector(position),
-                      T=time,
-                      s=DiffusorExp(light=direction, sigma=diffuser_sigma)
-                 )
-    #normalize the laser integral to be 1e15 photons
-    src = vp.utils.normalize_integral(total_photons, nitn=10)(src)
-    return src
+class Laser(rte.Source):
+    def __init__(self,
+                 position,
+                 direction=vp.Vector([0,0,1]),
+                 time=0,
+                 *,
+                 diffuser_sigma=1e-5,
+                 total_photons=1e15
+                ):
+        super().__init__(R=vp.Vector(position),
+                         T=time,
+                         s=vp.Vector(direction),
+                )
+        #normalize the laser integral to be 1e15 photons
+        self.diffuser_sigma = diffuser_sigma
+        self.total_photons = total_photons
+        self.diff_norm = (np.exp(1/diffuser_sigma)-np.exp(-1/diffuser_sigma))*diffuser_sigma
+        
+
+    def luminosity(self, p:rte.Point)->float:
+        s0 = self['s'].sample()
+        cosTheta = p.s.dot(s0)
+        pdf = np.exp(cosTheta/self.diffuser_sigma)/self.diff_norm
+        pdf *= 1/(2*np.pi)
+        return pdf * self.total_photons
